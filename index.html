@@ -647,15 +647,31 @@
     let currentQuestion = 0;
     let score = 0;
     let answered = false;
+    let runQuestions = shuffleQuestions();
+
+    function shuffleQuestions(previousOrder = []) {
+      const shuffled = [...questions];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      }
+
+      if (previousOrder.length === shuffled.length
+          && shuffled.every((question, index) => question === previousOrder[index])) {
+        [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+      }
+
+      return shuffled;
+    }
 
     function renderQuestion() {
-      const question = questions[currentQuestion];
+      const question = runQuestions[currentQuestion];
       answered = false;
       questionText.textContent = question.prompt;
-      questionCount.textContent = `${String(currentQuestion + 1).padStart(2, "0")} / ${questions.length}`;
-      progressLabel.innerHTML = `Question <strong>${currentQuestion + 1}</strong> of ${questions.length}`;
+      questionCount.textContent = `${String(currentQuestion + 1).padStart(2, "0")} / ${runQuestions.length}`;
+      progressLabel.innerHTML = `Question <strong>${currentQuestion + 1}</strong> of ${runQuestions.length}`;
       progressTrack.setAttribute("aria-valuenow", String(currentQuestion + 1));
-      progressFill.style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+      progressFill.style.width = `${((currentQuestion + 1) / runQuestions.length) * 100}%`;
       feedback.textContent = "";
       feedback.className = "feedback";
       nextButton.hidden = true;
@@ -676,7 +692,7 @@
     function chooseAnswer(selectedIndex) {
       if (answered) return;
       answered = true;
-      const question = questions[currentQuestion];
+      const question = runQuestions[currentQuestion];
       const isCorrect = selectedIndex === question.correct;
       const buttons = [...answersRoot.querySelectorAll(".answer")];
 
@@ -702,7 +718,7 @@
         feedback.classList.add("is-wrong");
       }
 
-      nextButton.textContent = currentQuestion === questions.length - 1 ? "See your results" : "Next question";
+      nextButton.textContent = currentQuestion === runQuestions.length - 1 ? "See your results" : "Next question";
       nextButton.append(document.createElement("span"));
       nextButton.lastElementChild.setAttribute("aria-hidden", "true");
       nextButton.lastElementChild.textContent = "→";
@@ -711,7 +727,7 @@
     }
 
     function showResults() {
-      const ratio = score / questions.length;
+      const ratio = score / runQuestions.length;
       let emoji;
       let headline;
       let message;
@@ -738,7 +754,7 @@
       results.innerHTML = `
         <div class="reaction" role="img" aria-label="${emoji}">${emoji}</div>
         <h1>${headline}</h1>
-        <p class="result-score">${score} <span style="color:var(--muted);font-size:16px;font-weight:550">/ ${questions.length} correct</span></p>
+        <p class="result-score">${score} <span style="color:var(--muted);font-size:16px;font-weight:550">/ ${runQuestions.length} correct</span></p>
         <p class="result-copy">${message}</p>
         <button class="restart-button" id="restart-button" type="button">Play again <span aria-hidden="true">↻</span></button>
       `;
@@ -750,6 +766,7 @@
     function restartQuiz() {
       currentQuestion = 0;
       score = 0;
+      runQuestions = shuffleQuestions(runQuestions);
       scoreLabel.textContent = "0";
       results.hidden = true;
       quizContent.hidden = false;
@@ -758,7 +775,7 @@
     }
 
     nextButton.addEventListener("click", () => {
-      if (currentQuestion === questions.length - 1) {
+      if (currentQuestion === runQuestions.length - 1) {
         showResults();
       } else {
         currentQuestion += 1;
